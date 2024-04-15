@@ -1,0 +1,120 @@
+The Amiga port of Extase has interactive music by Stephane Picq.
+
+Unless you're a very skilled player, it is impossible to hear the last track
+of the OST because the final level "Droid Ecstasis" doesn't show up during the 
+attract mode demo.
+
+Using WinUAE's debugger we can force the music driver to load a different track
+while loading a level.
+
+We'll need to set up a breakpoint before the level loads.  Type in:
+
+f 12c8
+
+Then either start a game or wait for the demo to start.
+The debugger will pop up during the loading screen, stopping at address $12c8
+
+Register D0 contains our music track ID.  Here's a list of all the music tracks
+and their assigned ID:
+
+0 = Dream Zone
+1 = Vision Control
+2 = Madness
+3 = Cry of Love
+4 = Mystic Crisis
+5 = Ideas Stimulus
+6 = Fear
+7 = Droid Ecstasis
+
+To change the ID to play Ideas Stimulus for example, type in:
+
+r d0 5
+
+
+<<< Various notes for MOD music tracker files >>>
+
+$21E2C = Sample Table (start of file)
+$21FE8 = Sequence Data
+
+Tracks 1 and 2 appear to be regular music
+Tracks 3 and 4 appear to be interactive events (there is one-known exception..."Ideas Stimulus" has Shaku flute phrase on track 4)
+
+"Bump" event on track 3 appears at offset 0288, then repeats every $400 bytes ($22270, $22670, $22A70, $22E70, $23270)
+
+use "Ma C" to mask only audio channels 3 and 4
+use "Ma 3" to mask only audio channels 1 and 2
+
+Ma 8 = Track 4 only
+Ma 4 = Track 3 only
+Ma 2 = Track 2 only
+Ma 1 = Track 1 only
+
+Dream Zone:
+
+Valid instrument numbers: 3,5,6,7,8,9,B,C,D
+
+3 = PAD
+5 = Moan
+6 = bass guitar
+7 = rain stick perc
+8 = xylo
+9 = SARARR
+B = Heartbeat
+C = Windchimes 
+D = FM Tubular Bell
+F = SILENCE (USED FOR STOPPING NOTES)
+
+Sample data for Dream Zone pad starts at $000233E8
+Sample table starts at around $00021E4C ($000233E8 is referenced here)
+Sample table FOR ALL SONGS ACTUALLY starts at $21E2C!
+
+
+00 02 33 E8 12 87 00 40 00 02 46 42 09 5A FF FF
+
+Sample table seems to be similar to MOD format:
+
+Sample start = 000233E8
+Sample Length! = 1287
+Volume = 0040
+Loop start = 00024642
+Loop length = 095A
+
+One-shot samples have 7F80 for loop start and 0002 for loop length.
+
+
+Sequence data:
+
+After the Sample table, we have a table at $21F1C that appears to be the sequence table.
+
+00000008 = Number of patterns
+0000 = Pattern 1 offset
+0400 = Pattern 2 offset
+0800 = Pattern 3 offset
+0800 = Pattern 3 offset again
+0C00 = Pattern 4 offset 
+0C00 = Pattern 4 offset again
+1000 = Pattern 5 offset 
+1000 = Pattern 5 offset again
+FFFF = SONG PLAYBACK FLAG (written to $21F30 at instruction 630C...FF also written to $63A3)
+
+
+Sequence data for all songs starts at $21FE8
+
+01AC 8340
+
+First two bytes = Pitch (01AC)
+3rd byte (1st nibble) = Instrument (8)
+3rd byte (2nd nibble) = Effect (3)
+4th byte = Effect parameter (40)
+
+
+Every $100 bytes is 4 beats ($40 per beat)
+
+
+Sequence data for first pad note at $000223E8?
+Sequence data for 2nd pad note at $000227E8?
+Sequence data for third note at $000229E8?
+
+Pad note loops back to 227E8 to repeat higher note
+
+When xylo arp starts playing, we start playing at $00022BE8, then next measure starts at $00022DE8
